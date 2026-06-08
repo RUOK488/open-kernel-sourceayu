@@ -1,4 +1,4 @@
-name: SukiSU Ultra Kernel Build for POCO X3 Pro (Clang Fix)
+name: SukiSU Ultra Kernel Build for POCO X3 Pro (Clang 13)
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
             git make bc bison flex libssl-dev libelf-dev \
             build-essential lzop cpio device-tree-compiler python3 \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
-            clang-14 lld-14 llvm-14 python2 lz4
+            clang-13 lld-13 llvm-13 python2 lz4
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
       - name: Clone kernel source (LuffyTaro008)
@@ -74,19 +74,19 @@ jobs:
           scripts/config --enable CONFIG_KPM
           make olddefconfig
 
-      - name: Build kernel image (with extra Clang flag)
+      - name: Build kernel image (with Clang 13 and -Wno-error)
         run: |
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
           make -j$(nproc) \
-            CC=clang-14 \
-            LD=ld.lld-14 \
-            AR=llvm-ar-14 \
-            NM=llvm-nm-14 \
-            OBJCOPY=llvm-objcopy-14 \
-            KCFLAGS="-enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang" \
+            CC=clang-13 \
+            LD=ld.lld-13 \
+            AR=llvm-ar-13 \
+            NM=llvm-nm-13 \
+            OBJCOPY=llvm-objcopy-13 \
+            KCFLAGS="-Wno-error" \
             Image
 
       - name: Package with AnyKernel3
