@@ -1,4 +1,4 @@
-name: SukiSU Ultra Kernel Build for POCO X3 Pro (Clang 13)
+name: SukiSU Ultra Kernel Build for POCO X3 Pro (GCC)
 
 on:
   workflow_dispatch:
@@ -14,8 +14,7 @@ jobs:
           sudo apt install -y \
             git make bc bison flex libssl-dev libelf-dev \
             build-essential lzop cpio device-tree-compiler python3 \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
-            clang-13 lld-13 llvm-13 python2 lz4
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi python2 lz4
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
       - name: Clone kernel source (LuffyTaro008)
@@ -63,31 +62,26 @@ jobs:
           scripts/config --enable CONFIG_DEBUG_KERNEL
           scripts/config --enable CONFIG_KALLSYMS
           scripts/config --enable CONFIG_KALLSYMS_ALL
-          # Disable stack protector (Clang does not support strong)
+          # Disable stack protector (GCC is fine with strong, but we can keep as none for safety)
           scripts/config --disable CONFIG_CC_STACKPROTECTOR_STRONG
           scripts/config --enable CONFIG_CC_STACKPROTECTOR_NONE
-          # Disable Clang auto-init (causes build error)
-          scripts/config --disable CONFIG_INIT_STACK_ALL_ZERO
+          # Disable LTO (Clang-specific, safe to disable for GCC)
+          scripts/config --disable CONFIG_LTO_CLANG
+          scripts/config --disable CONFIG_LTO
+          # Disable GCC plugins to avoid extra complexity
           scripts/config --disable CONFIG_GCC_PLUGINS
           # Enable SukiSU requirements
           scripts/config --enable CONFIG_KSU_MANUAL_HOOK
           scripts/config --enable CONFIG_KPM
           make olddefconfig
 
-      - name: Build kernel image (with Clang 13 and -Wno-error)
+      - name: Build kernel image with GCC
         run: |
           cd kernel
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
-          make -j$(nproc) \
-            CC=clang-13 \
-            LD=ld.lld-13 \
-            AR=llvm-ar-13 \
-            NM=llvm-nm-13 \
-            OBJCOPY=llvm-objcopy-13 \
-            KCFLAGS="-Wno-error" \
-            Image
+          make -j$(nproc) Image
 
       - name: Package with AnyKernel3
         run: |
