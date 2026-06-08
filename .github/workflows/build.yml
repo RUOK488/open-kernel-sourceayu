@@ -1,4 +1,4 @@
-name: SukiSU Ultra Kernel Build for POCO X3 Pro (Fixed)
+name: SukiSU Ultra Kernel Build for POCO X3 Pro (Clang Fix)
 
 on:
   workflow_dispatch:
@@ -66,12 +66,15 @@ jobs:
           # Disable stack protector (Clang does not support strong)
           scripts/config --disable CONFIG_CC_STACKPROTECTOR_STRONG
           scripts/config --enable CONFIG_CC_STACKPROTECTOR_NONE
+          # Disable Clang auto-init (causes build error)
+          scripts/config --disable CONFIG_INIT_STACK_ALL_ZERO
+          scripts/config --disable CONFIG_GCC_PLUGINS
           # Enable SukiSU requirements
           scripts/config --enable CONFIG_KSU_MANUAL_HOOK
           scripts/config --enable CONFIG_KPM
           make olddefconfig
 
-      - name: Build kernel image
+      - name: Build kernel image (with extra Clang flag)
         run: |
           cd kernel
           export ARCH=arm64
@@ -83,6 +86,7 @@ jobs:
             AR=llvm-ar-14 \
             NM=llvm-nm-14 \
             OBJCOPY=llvm-objcopy-14 \
+            KCFLAGS="-enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang" \
             Image
 
       - name: Package with AnyKernel3
